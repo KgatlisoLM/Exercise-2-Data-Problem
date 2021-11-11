@@ -1,97 +1,85 @@
-﻿using System;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Data_Problem
 {
-    class Program
+   public class Program
     {
-        static void Main(string[] args)
-        {
-            string filePath = "../../../Data/Data.csv";
+       public static void Main()
+       {
 
-
-            //string[] lines = File.ReadAllLines(filePath);
-
-            IEnumerable<string> lines = new List<string>();
-
-            List<DataDsc> dataDsc = new List<DataDsc>();
-            List<DataAsc> dataAsc = new List<DataAsc>();
-            List<DataAdress> dataAdres = new List<DataAdress>();
-
-
-            lines = File.ReadAllLines(filePath).ToList().Skip(1).Take(8).GroupBy(n =>n).OrderByDescending(x => x.Count()).ThenByDescending(g => g.Key).SelectMany(g=>g);
-            foreach(string line in lines)
-            {
-                string[] items = line.Split(',');
-                DataDsc d = new DataDsc(items[0], items[1]);
-     
-                dataDsc.Add(d);
-            }
-
-            List<string> outContents = new List<string>();
-
-            foreach (DataDsc d in dataDsc)
-            {
-                
-                Console.WriteLine(d);
-                outContents.Add(d.ToString());
-            }
-
-            string outFile = "NamesDsc.txt";
-
-            File.WriteAllLines(outFile, outContents);
-
-            Console.WriteLine("\n");
-
-            lines = File.ReadAllLines(filePath).ToList().Skip(1).Take(8).GroupBy(n => n).OrderBy(x => x.Count()).ThenBy(g =>g.Key).SelectMany(g => g);
-            foreach (string line in lines)
-            {
-                string[] items = line.Split(',');
-                DataAsc d = new DataAsc(items[0], items[1]);
-                dataAsc.Add(d);
-            }
-
-
-            List<string> outNames = new List<string>();
-
-            foreach (DataAsc d in dataAsc)
-            {
-                Console.WriteLine(d);
-                outNames.Add(d.ToString());
-            }
-
-            string outList = "NamesAsc.txt";
-            File.WriteAllLines(outList, outNames);
-
-            Console.WriteLine("\n");
-
-            lines = File.ReadAllLines(filePath).ToList().Skip(1).Take(8).GroupBy(n => n).OrderBy(x => x.Count()).ThenBy(g =>g.Key).SelectMany(g =>g);
-            foreach (string line in lines)
-            {
-                string[] items = line.Split(',');
-                DataAdress d = new DataAdress(items[2]);
-                dataAdres.Add(d);
-            }
-
-
+            string[] csvLines =   File.ReadAllLines("../../../Data/Data.csv");
+            StreamWriter pathNames = new StreamWriter("../../../Data/Names.txt");
+            StreamWriter pathAddress = new StreamWriter("../../../Data/Addresses.txt");
    
-            foreach (DataAdress d in dataAdres)
+            var FirstNames = new List<string>();
+            var LastNames = new List<string>();
+           
+            
+            var Address = new List<string>();
+
+            for (int i = 1; i < csvLines.Length; i++)
             {
-                Console.WriteLine(d);
+               string[] rowData = csvLines[i].Split(',');
+
+                FirstNames.Add(rowData[0]);
+                LastNames.Add(rowData[1]);
+                Address.Add(rowData[2]);
             }
 
-            Console.ReadLine();   
+            FirstNames.AddRange(LastNames);
+
+            var arr = FirstNames.ToList();
+
+            arr.Sort();
+
+            var array = from x in arr
+                        group x by x into g
+                        let count = g.Count()
+                        orderby count descending
+                        select new { Value = g.Key, Count = count };
+
+            foreach (var item in array)
+            {
+                Console.WriteLine("{0},{1}", item.Value, item.Count);
+                pathNames.WriteLine("{0},{1}", item.Value, item.Count);  
+            }
+            pathNames.Close();
+
+
+
+
+            Console.WriteLine("\n");
+
+            var address = Address.OrderBy( x => new string(x.Where(char.IsLetter).ToArray())).ThenBy(x => {
+                int number;
+                if (int.TryParse(new string(x.Where(char.IsDigit).ToArray()), out number))
+
+                    return number;
+                return -1;
             
+            }).ToList();
+
+            for (int i = 0; i < address.Count; i++)
+            {
+                var arry = address[i];
+                Console.WriteLine(string.Join(",", arry));
+
+                pathAddress.WriteLine(string.Join(",", arry));
+            }
+            pathAddress.Close();
+
+            Console.ReadKey();   
         }
 
 
-
-
-
-       
-
-     
     }
+ 
 }
